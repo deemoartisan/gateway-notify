@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2026-03-09
+
+### Security
+- Removed config file reading from MANUAL.md example code
+- Removed personal account information from examples (privacy fix)
+
+### Changed
+- Updated SKILL.md examples to use generic placeholders
+- Updated MANUAL.md handler example to not read openclaw.json
+
 ## [1.0.1] - 2026-03-09
 
 ### Security

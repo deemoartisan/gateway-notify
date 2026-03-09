@@ -34,8 +34,6 @@ Example for iMessage:
 ```typescript
 import { exec } from "child_process";
 import { promisify } from "util";
-import { readFileSync } from "fs";
-import { homedir } from "os";
 
 const execAsync = promisify(exec);
 
@@ -45,20 +43,15 @@ const handler = async (event) => {
   }
 
   try {
-    const configPath = `${homedir()}/.openclaw/openclaw.json`;
-    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
-    const model = config.agents?.defaults?.model || "未知";
-    
     const now = new Date();
-    const timeStr = now.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
+    const timeStr = now.toLocaleString('en-US', { hour12: false });
     
     const message = `🚀 Gateway started!
 
 ⏰ Time: ${timeStr}
-🤖 Model: ${model}
 🌐 Port: 127.0.0.1:18789`;
 
-    await execAsync(`imsg send --to YOUR_ADDRESS --text "${message}"`);
+    await execAsync(`imsg send --to 'YOUR_ADDRESS' --text "${message}"`);
   } catch (err) {
     console.error("[gateway-restart-notify] Failed:", err);
   }

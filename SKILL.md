@@ -21,7 +21,7 @@ scripts/setup_gateway_notify.sh <channel> <address>
 
 Examples:
 ```bash
-scripts/setup_gateway_notify.sh imessage 277498782@qq.com
+scripts/setup_gateway_notify.sh imessage user@example.com
 scripts/setup_gateway_notify.sh whatsapp +1234567890
 scripts/setup_gateway_notify.sh telegram @username
 ```
