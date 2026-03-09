@@ -4,7 +4,7 @@ set -e
 if [ $# -lt 2 ]; then
   echo "Usage: $0 <channel> <address>"
   echo "Examples:"
-  echo "  $0 imessage 277498782@qq.com"
+  echo "  $0 imessage user@example.com"
   echo "  $0 whatsapp +1234567890"
   echo "  $0 telegram @username"
   exit 1
@@ -66,8 +66,8 @@ HOOKEOF
 
 echo "✓ Created HOOK.md"
 
-# Escape address for safe embedding
-SAFE_ADDRESS=$(printf '%s' "$ADDRESS" | sed "s/'/'\\\\''/g")
+# Escape address for safe embedding (cross-platform)
+SAFE_ADDRESS=$(printf '%s' "$ADDRESS" | awk '{gsub(/'\''/, "'\''\\'\'''\''"); print}')
 
 # Create handler with validated inputs
 cat > "$HOOK_DIR/handler.ts" << HANDLEREOF
@@ -87,10 +87,10 @@ const handler = async (event) => {
     const now = new Date();
     const timeStr = now.toLocaleString('en-US', { hour12: false });
     
-    const message = \\\`🚀 Gateway started!
+    const message = \`🚀 Gateway started!
 
-⏰ Time: \\\${timeStr}
-🌐 Port: 127.0.0.1:18789\\\`;
+⏰ Time: \${timeStr}
+🌐 Port: 127.0.0.1:18789\`;
 
 
     // Use validated channel and address
@@ -99,11 +99,11 @@ const handler = async (event) => {
     
     let cmd;
     if (channel === 'imessage') {
-      cmd = `imsg send --to '${address}' --text "${message}"`;
+      cmd = \`imsg send --to '\${address}' --text "\${message}"\`;
     } else if (channel === 'whatsapp') {
-      cmd = `wacli send --to '${address}' --text "${message}"`;
+      cmd = \`wacli send --to '\${address}' --text "\${message}"\`;
     } else {
-      cmd = `openclaw message send --channel ${channel} --target '${address}' --message "${message}"`;
+      cmd = \`openclaw message send --channel \${channel} --target '\${address}' --message "\${message}"\`;
     }
     
     await execAsync(cmd);
