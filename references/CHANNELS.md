@@ -44,3 +44,12 @@ openclaw message send --channel discord --target <address> --message "<message>"
 ```bash
 openclaw message send --channel slack --target <address> --message "<message>"
 ```
+
+## openclaw-weixin
+
+**CLI**: `openclaw message`
+**Address format**: Weixin chat ID ending in `@im.wechat`, plus an OpenClaw `account_id`
+**Command**:
+```bash
+openclaw message send --channel openclaw-weixin --target <chat_id@im.wechat> --account <account_id> --message "<message>"
+```

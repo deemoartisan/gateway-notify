@@ -80,17 +80,18 @@ HOOKEOF
 
 echo "✓ Created HOOK.md"
 
-SAFE_ADDRESS=$(printf '%s' "$ADDRESS" | sed "s/'/'\\''/g")
-SAFE_ACCOUNT_ID=$(printf '%s' "$ACCOUNT_ID" | sed "s/'/'\\''/g")
-SAFE_CHANNEL=$(printf '%s' "$CHANNEL" | sed "s/'/'\\''/g")
+# Escape values for safe embedding (cross-platform)
+SAFE_ADDRESS=$(printf '%s' "$ADDRESS" | awk '{gsub(/'\''/, "'\''\\'\'''\''"); print}')
+SAFE_ACCOUNT_ID=$(printf '%s' "$ACCOUNT_ID" | awk '{gsub(/'\''/, "'\''\\'\'''\''"); print}')
+SAFE_CHANNEL=$(printf '%s' "$CHANNEL" | awk '{gsub(/'\''/, "'\''\\'\'''\''"); print}')
 
-cat > "$HOOK_DIR/handler.ts" <<HANDLEREOF
+cat > "$HOOK_DIR/handler.ts" << 'HANDLEREOF'
 import { exec } from "child_process";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
-const handler = async (event: any) => {
+const handler = async (event) => {
   if (event.type !== "gateway" || event.action !== "startup") {
     return;
   }
@@ -99,22 +100,22 @@ const handler = async (event: any) => {
 
   try {
     const now = new Date();
-    const timeStr = now.toLocaleString("zh-CN", { hour12: false });
-    const message = "🚀 网关已启动\\n\\n⏰ 时间：" + timeStr + "\\n🌐 地址：127.0.0.1:18789";
+    const timeStr = now.toLocaleString('en-US', { hour12: false });
+    const message = `🚀 Gateway started!\n\n⏰ Time: ${timeStr}\n🌐 Port: 127.0.0.1:18789`;
 
-    const channel = '${SAFE_CHANNEL}';
-    const address = '${SAFE_ADDRESS}';
-    const accountId = '${SAFE_ACCOUNT_ID}';
+    const channel = '__CHANNEL__';
+    const address = '__ADDRESS__';
+    const accountId = '__ACCOUNT_ID__';
 
-    let cmd: string;
-    if (channel === "imessage") {
-      cmd = "imsg send --to '" + address + "' --text \"" + message + "\"";
-    } else if (channel === "whatsapp") {
-      cmd = "wacli send --to '" + address + "' --text \"" + message + "\"";
-    } else if (channel === "openclaw-weixin") {
-      cmd = "openclaw message send --channel " + channel + " --target '" + address + "' --account '" + accountId + "' --message \"" + message + "\"";
+    let cmd;
+    if (channel === 'imessage') {
+      cmd = `imsg send --to '${address}' --text "${message}"`;
+    } else if (channel === 'whatsapp') {
+      cmd = `wacli send --to '${address}' --text "${message}"`;
+    } else if (channel === 'openclaw-weixin') {
+      cmd = `openclaw message send --channel ${channel} --target '${address}' --account '${accountId}' --message "${message}"`;
     } else {
-      cmd = "openclaw message send --channel " + channel + " --target '" + address + "' --message \"" + message + "\"";
+      cmd = `openclaw message send --channel ${channel} --target '${address}' --message "${message}"`;
     }
 
     await execAsync(cmd);
@@ -126,6 +127,20 @@ const handler = async (event: any) => {
 
 export default handler;
 HANDLEREOF
+
+python3 - "$HOOK_DIR/handler.ts" "$SAFE_CHANNEL" "$SAFE_ADDRESS" "$SAFE_ACCOUNT_ID" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+channel = sys.argv[2]
+address = sys.argv[3]
+account_id = sys.argv[4]
+text = path.read_text()
+text = text.replace('__CHANNEL__', channel)
+text = text.replace('__ADDRESS__', address)
+text = text.replace('__ACCOUNT_ID__', account_id)
+path.write_text(text)
+PY
 
 echo "✓ Created handler.ts"
 

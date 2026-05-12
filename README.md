@@ -6,19 +6,20 @@ Auto-notify when OpenClaw gateway restarts. Supports multiple messaging channels
 
 - 🚀 Automatic notification on gateway startup
 - 📊 Shows model, time, and port info
-- 🌐 Supports 5 channels: iMessage, WhatsApp, Telegram, Discord, Slack
+- 🌐 Supports 6 channels: iMessage, WhatsApp, Telegram, Discord, Slack, openclaw-weixin
 - ⚡ One-command setup
 
 ## Quick Start
 
 ```bash
-scripts/setup_gateway_notify.sh <channel> <address>
+scripts/setup_gateway_notify.sh <channel> <address> [account_id]
 ```
 
 Examples:
 ```bash
 scripts/setup_gateway_notify.sh imessage user@example.com
 scripts/setup_gateway_notify.sh telegram @username
+scripts/setup_gateway_notify.sh openclaw-weixin your_chat_id@im.wechat your_account_id
 ```
 
 ## Installation
@@ -52,6 +53,7 @@ openclaw skills install gateway-notify.skill
 | Telegram | `openclaw message` | Username or Chat ID |
 | Discord | `openclaw message` | Channel ID |
 | Slack | `openclaw message` | Channel name or ID |
+| openclaw-weixin | `openclaw message` | Chat ID `...@im.wechat` + account ID |
 
 ## License
 
