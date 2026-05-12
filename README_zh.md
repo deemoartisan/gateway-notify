@@ -11,7 +11,7 @@
 使用设置脚本配置消息渠道和地址：
 
 ```bash
-scripts/setup_gateway_notify.sh <渠道> <地址>
+scripts/setup_gateway_notify.sh <渠道> <地址> [account_id]
 ```
 
 示例：
@@ -19,6 +19,7 @@ scripts/setup_gateway_notify.sh <渠道> <地址>
 scripts/setup_gateway_notify.sh imessage user@example.com
 scripts/setup_gateway_notify.sh whatsapp +1234567890
 scripts/setup_gateway_notify.sh telegram @username
+scripts/setup_gateway_notify.sh openclaw-weixin your_chat_id@im.wechat your_account_id
 ```
 
 脚本会自动：
