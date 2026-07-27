@@ -28,9 +28,8 @@ scripts/setup_gateway_notify.sh telegram @username
 
 The script will:
 1. Create the hook directory at `~/.openclaw/hooks/gateway-restart-notify`
-2. Generate the handler with the specified channel configuration
-3. Enable the hook in OpenClaw config
-4. Restart the gateway to activate
+2. Generate the handler with the specified channel configuration (with security hardening)
+3. Restart the gateway to activate (OpenClaw 2026.7+ auto-loads hooks, no explicit enable needed)
 
 ## How It Works
 

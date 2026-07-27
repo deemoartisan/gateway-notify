@@ -23,9 +23,8 @@ scripts/setup_gateway_notify.sh telegram @username
 
 脚本会自动：
 1. 在 `~/.openclaw/hooks/gateway-restart-notify` 创建钩子目录
-2. 生成配置好的处理器代码
-3. 在 OpenClaw 配置中启用钩子
-4. 重启网关以激活
+2. 生成配置好的处理器代码（含安全加固）
+3. 重启网关以激活（OpenClaw 2026.7+ 自动加载，无需额外启用命令）
 
 ## 工作原理
 
