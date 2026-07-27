@@ -32,26 +32,42 @@ Create `~/.openclaw/hooks/gateway-restart-notify/handler.ts` with your channel-s
 Example for iMessage:
 
 ```typescript
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
+import { readFile } from "fs/promises";
+import { homedir } from "os";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
-const handler = async (event) => {
-  if (event.type !== "gateway" || event.action !== "startup") {
-    return;
-  }
+// Replace with your CLI command and address
+const CLI_BIN = "imsg";
+const CLI_ARGS = ["send", "--to", "YOUR_ADDRESS", "--text"];
 
+const handler = async (event: any) => {
+  // OpenClaw 2026.7+ no longer includes event.type/event.action
+  // HOOK.md events filter ensures this only fires on gateway:startup
   try {
+    const configPath = `${homedir()}/.openclaw/openclaw.json`;
+    const raw = await readFile(configPath, "utf-8").catch(() => "{}");
+    const config = JSON.parse(raw);
+
+    const modelConfig = config.agents?.defaults?.model;
+    const model = typeof modelConfig === "string" ? modelConfig : modelConfig?.primary ?? "unknown";
+    const gatewayPort = config.gateway?.port ?? 18789;
+
     const now = new Date();
-    const timeStr = now.toLocaleString('en-US', { hour12: false });
-    
-    const message = `🚀 Gateway started!
+    let timeStr: string;
+    try {
+      timeStr = now.toLocaleString("en-US", { hour12: false });
+    } catch {
+      const offset = new Date(now.getTime());
+      timeStr = offset.toISOString().replace("T", " ").slice(0, 19);
+    }
 
-⏰ Time: ${timeStr}
-🌐 Port: 127.0.0.1:18789`;
+    const message = `🚀 Gateway started!\n\n⏰ Time: ${timeStr}\n🤖 Model: ${model}\n🌐 Port: ${gatewayPort}`;
 
-    await execAsync(`imsg send --to 'YOUR_ADDRESS' --text "${message}"`);
+    await execFileAsync(CLI_BIN, [...CLI_ARGS, message], { timeout: 10000 });
+    console.log("[gateway-restart-notify] Notification sent");
   } catch (err) {
     console.error("[gateway-restart-notify] Failed:", err);
   }
@@ -60,16 +76,12 @@ const handler = async (event) => {
 export default handler;
 ```
 
-Replace `YOUR_ADDRESS` and the command with your channel's CLI.
+Replace `YOUR_ADDRESS` and adjust `CLI_BIN` / `CLI_ARGS` for your channel.
 
-## Step 4: Enable Hook
-
-```bash
-openclaw hooks enable gateway-restart-notify
-```
-
-## Step 5: Restart Gateway
+## Step 4: Restart Gateway
 
 ```bash
 openclaw gateway restart
 ```
+
+The hook is automatically loaded from `~/.openclaw/hooks/` — no explicit enable command needed in OpenClaw 2026.7+.
