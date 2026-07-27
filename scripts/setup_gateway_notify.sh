@@ -31,6 +31,10 @@ fi
 echo "Setting up gateway-restart-notify hook..."
 echo "Channel: $CHANNEL"
 echo "Address: $ADDRESS"
+echo ""
+echo "⚠️  Privacy notice: This hook will auto-run on every gateway startup and send"
+echo "    a notification to your chosen messaging channel. The message contains only"
+echo "    the startup timestamp — no local configuration or sensitive data is transmitted."
 
 mkdir -p "$HOOK_DIR"
 chmod 700 "$HOOK_DIR"
@@ -59,7 +63,6 @@ echo "✓ Created HOOK.md"
 case "$CHANNEL" in
   imessage)
     CLI_BIN="imsg"
-    # python3 generates a safe JSON string literal for ADDRESS; bash just wraps the array brackets
     CLI_ARGS_JSON="[\"send\", \"--to\", $(printf '%s' "$ADDRESS" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'), \"--text\"]"
     ;;
   whatsapp)
@@ -87,7 +90,6 @@ cli_args_json = sys.argv[3]
 
 handler = f"""import {{ execFile }} from "child_process";
 import {{ promisify }} from "util";
-import {{ readFile }} from "fs/promises";
 import {{ homedir }} from "os";
 
 const execFileAsync = promisify(execFile);
@@ -99,19 +101,8 @@ const CLI_ARGS = {cli_args_json}; // args before the message
 const handler = async (event: any) => {{
   // event.type/event.action are not present in openclaw 2026.7+
   // HOOK.md events filter ensures this only fires on gateway:startup
+  // Privacy: only timestamp is transmitted; no local config or sensitive data.
   try {{
-    const configPath = `${{homedir()}}/.openclaw/openclaw.json`;
-    const raw = await readFile(configPath, "utf-8").catch(() => "{{}}");
-    const config = JSON.parse(raw);
-
-    const modelConfig = config.agents?.defaults?.model;
-    const model =
-      typeof modelConfig === "string"
-        ? modelConfig
-        : modelConfig?.primary ?? "unknown";
-
-    const gatewayPort = config.gateway?.port ?? 18789;
-
     const now = new Date();
     // Fallback formatter in case ICU data is incomplete
     let timeStr: string;
@@ -122,7 +113,7 @@ const handler = async (event: any) => {{
       timeStr = offset.toISOString().replace("T", " ").slice(0, 19);
     }}
 
-    const message = `🚀 Gateway started!\\n\\n⏰ Time: ${{timeStr}}\\n🤖 Model: ${{model}}\\n🌐 Port: ${{gatewayPort}}`;
+    const message = `🚀 Gateway started!\n\n⏰ ${{timeStr}}`;
 
     await execFileAsync(CLI_BIN, [...CLI_ARGS, message], {{ timeout: 10000 }});
     console.log("[gateway-restart-notify] Notification sent");

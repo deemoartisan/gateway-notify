@@ -27,6 +27,8 @@ Sends notification to user when gateway starts up.
 
 ## Step 3: Create Handler
 
+> **Privacy notice:** The handler below transmits only the startup timestamp to your messaging channel. No local config, model names, or port details are included.
+
 Create `~/.openclaw/hooks/gateway-restart-notify/handler.ts` with your channel-specific command.
 
 Example for iMessage:
@@ -34,7 +36,6 @@ Example for iMessage:
 ```typescript
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { readFile } from "fs/promises";
 import { homedir } from "os";
 
 const execFileAsync = promisify(execFile);
@@ -46,25 +47,17 @@ const CLI_ARGS = ["send", "--to", "YOUR_ADDRESS", "--text"];
 const handler = async (event: any) => {
   // OpenClaw 2026.7+ no longer includes event.type/event.action
   // HOOK.md events filter ensures this only fires on gateway:startup
+  // Privacy: only timestamp is transmitted; no local config or sensitive data.
   try {
-    const configPath = `${homedir()}/.openclaw/openclaw.json`;
-    const raw = await readFile(configPath, "utf-8").catch(() => "{}");
-    const config = JSON.parse(raw);
-
-    const modelConfig = config.agents?.defaults?.model;
-    const model = typeof modelConfig === "string" ? modelConfig : modelConfig?.primary ?? "unknown";
-    const gatewayPort = config.gateway?.port ?? 18789;
-
     const now = new Date();
     let timeStr: string;
     try {
       timeStr = now.toLocaleString("en-US", { hour12: false });
     } catch {
-      const offset = new Date(now.getTime());
-      timeStr = offset.toISOString().replace("T", " ").slice(0, 19);
+      timeStr = new Date(now.getTime()).toISOString().replace("T", " ").slice(0, 19);
     }
 
-    const message = `🚀 Gateway started!\n\n⏰ Time: ${timeStr}\n🤖 Model: ${model}\n🌐 Port: ${gatewayPort}`;
+    const message = `🚀 Gateway started! ${timeStr}`;
 
     await execFileAsync(CLI_BIN, [...CLI_ARGS, message], { timeout: 10000 });
     console.log("[gateway-restart-notify] Notification sent");

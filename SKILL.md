@@ -9,7 +9,9 @@ Automatically send notifications when the OpenClaw gateway starts up.
 
 ## What It Does
 
-Creates a hook that triggers on `gateway:startup` events and sends a notification message to the user's preferred channel with gateway status information.
+Creates a hook that triggers on `gateway:startup` events and sends a minimal notification (startup timestamp only) to the user's preferred channel.
+
+> **Privacy notice:** This hook auto-runs on every gateway startup and sends a message to your chosen messaging channel. Only the startup timestamp is transmitted — no local configuration, model names, or network details leave your machine.
 
 ## Quick Start
 
@@ -35,7 +37,7 @@ The script will:
 
 The hook uses OpenClaw's internal hook system:
 - Listens for `gateway:startup` events
-- Collects gateway status (model, time, port)
+- Collects gateway startup time
 - Sends notification via the configured channel CLI
 
 ## Supported Channels

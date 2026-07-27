@@ -1,5 +1,7 @@
 # Supported Channels
 
+> **Privacy notice:** This hook transmits only a startup timestamp to your chosen channel. No local configuration, model names, port numbers, or other host details are included in the message.
+
 ## iMessage
 
 **CLI**: `imsg`
