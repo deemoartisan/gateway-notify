@@ -1,12 +1,14 @@
 #!/bin/bash
-set -e
+set -eu
 
 if [ $# -lt 2 ]; then
   echo "Usage: $0 <channel> <address>"
   echo "Examples:"
-  echo "  $0 imessage user@example.com"
+  echo "  $0 imessage yourname@qq.com"
   echo "  $0 whatsapp +1234567890"
   echo "  $0 telegram @username"
+  echo "  $0 discord 1234567890"
+  echo "  $0 slack '#general'"
   exit 1
 fi
 
@@ -14,113 +16,132 @@ CHANNEL=$1
 ADDRESS=$2
 HOOK_DIR="$HOME/.openclaw/hooks/gateway-restart-notify"
 
-# Input validation
-if [[ ! "$CHANNEL" =~ ^[a-z]+$ ]]; then
-  echo "Error: Invalid channel name. Only lowercase letters allowed."
+# Check dependencies
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Error: python3 is required but not found in PATH"
+  echo "Install with: apt install python3  (Debian/Ubuntu) or brew install python3 (macOS)"
   exit 1
 fi
 
-# Validate address format based on channel
-case "$CHANNEL" in
-  imessage)
-    if [[ ! "$ADDRESS" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]] && [[ ! "$ADDRESS" =~ ^[0-9]+@[a-z]+\.[a-z]+$ ]]; then
-      echo "Error: Invalid email format for iMessage"
-      exit 1
-    fi
-    ;;
-  whatsapp)
-    if [[ ! "$ADDRESS" =~ ^\+[0-9]{10,15}$ ]]; then
-      echo "Error: Invalid phone format for WhatsApp (use +countrycode)"
-      exit 1
-    fi
-    ;;
-  telegram)
-    if [[ ! "$ADDRESS" =~ ^@[a-zA-Z0-9_]{5,32}$ ]] && [[ ! "$ADDRESS" =~ ^[0-9]+$ ]]; then
-      echo "Error: Invalid Telegram username or chat ID"
-      exit 1
-    fi
-    ;;
-esac
+# Warn if already installed
+if [ -d "$HOOK_DIR" ]; then
+  echo "⚠️  Hook already exists at $HOOK_DIR, overwriting..."
+fi
 
 echo "Setting up gateway-restart-notify hook..."
 echo "Channel: $CHANNEL"
 echo "Address: $ADDRESS"
 
 mkdir -p "$HOOK_DIR"
+chmod 700 "$HOOK_DIR"
 
 # Create HOOK.md
-cat > "$HOOK_DIR/HOOK.md" << 'HOOKEOF'
+cat > "$HOOK_DIR/HOOK.md" << 'EOF'
 ---
 name: gateway-restart-notify
 description: "Send notification when gateway starts"
 metadata:
   openclaw:
     emoji: "🚀"
-    events: ["gateway:startup"]
+    events:
+      - gateway:startup
 ---
 
 # Gateway Restart Notify
 
 Sends notification to user when gateway starts up.
-HOOKEOF
+EOF
 
 echo "✓ Created HOOK.md"
 
-# Escape address for safe embedding (cross-platform)
-SAFE_ADDRESS=$(printf '%s' "$ADDRESS" | awk '{gsub(/'\''/, "'\''\\'\'''\''"); print}')
+# Build bin and args JSON separately — avoids split-on-space bugs and injection
+# via ADDRESS containing quotes or special chars
+case "$CHANNEL" in
+  imessage)
+    CLI_BIN="imsg"
+    # python3 generates a safe JSON string literal for ADDRESS; bash just wraps the array brackets
+    CLI_ARGS_JSON="[\"send\", \"--to\", $(printf '%s' "$ADDRESS" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'), \"--text\"]"
+    ;;
+  whatsapp)
+    CLI_BIN="wacli"
+    CLI_ARGS_JSON="[\"send\", \"--to\", $(printf '%s' "$ADDRESS" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'), \"--text\"]"
+    ;;
+  telegram|discord|slack)
+    CLI_BIN="openclaw"
+    CLI_ARGS_JSON="[\"message\", \"send\", \"--channel\", $(printf '%s' "$CHANNEL" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'), \"--target\", $(printf '%s' "$ADDRESS" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'), \"--message\"]"
+    ;;
+  *)
+    echo "Error: Unsupported channel '$CHANNEL'"
+    echo "Supported: imessage, whatsapp, telegram, discord, slack"
+    exit 1
+    ;;
+esac
 
-# Create handler with validated inputs
-cat > "$HOOK_DIR/handler.ts" << HANDLEREOF
-import { exec } from "child_process";
-import { promisify } from "util";
+# Safely write handler.ts using python3 to avoid heredoc injection issues
+python3 - "$HOOK_DIR/handler.ts" "$CLI_BIN" "$CLI_ARGS_JSON" << 'PYEOF'
+import sys, json
 
-const execAsync = promisify(exec);
+out_path = sys.argv[1]
+cli_bin = sys.argv[2]
+cli_args_json = sys.argv[3]
 
-const handler = async (event) => {
-  if (event.type !== "gateway" || event.action !== "startup") {
-    return;
-  }
+handler = f"""import {{ execFile }} from "child_process";
+import {{ promisify }} from "util";
+import {{ readFile }} from "fs/promises";
+import {{ homedir }} from "os";
 
-  console.log("[gateway-restart-notify] Gateway started, sending notification");
+const execFileAsync = promisify(execFile);
 
-  try {
+// CLI config injected by setup script
+const CLI_BIN = {json.dumps(cli_bin)};
+const CLI_ARGS = {cli_args_json}; // args before the message
+
+const handler = async (event: any) => {{
+  // event.type/event.action are not present in openclaw 2026.7+
+  // HOOK.md events filter ensures this only fires on gateway:startup
+  try {{
+    const configPath = `${{homedir()}}/.openclaw/openclaw.json`;
+    const raw = await readFile(configPath, "utf-8").catch(() => "{{}}");
+    const config = JSON.parse(raw);
+
+    const modelConfig = config.agents?.defaults?.model;
+    const model =
+      typeof modelConfig === "string"
+        ? modelConfig
+        : modelConfig?.primary ?? "unknown";
+
+    const gatewayPort = config.gateway?.port ?? 18789;
+
     const now = new Date();
-    const timeStr = now.toLocaleString('en-US', { hour12: false });
-    
-    const message = \`🚀 Gateway started!
+    // Fallback formatter in case ICU data is incomplete
+    let timeStr: string;
+    try {{
+      timeStr = now.toLocaleString("zh-CN", {{ timeZone: "Asia/Shanghai", hour12: false }});
+    }} catch {{
+      const offset = new Date(now.getTime() + 8 * 3600 * 1000);
+      timeStr = offset.toISOString().replace("T", " ").slice(0, 19);
+    }}
 
-⏰ Time: \${timeStr}
-🌐 Port: 127.0.0.1:18789\`;
+    const message = `🚀 Gateway started!\\n\\n⏰ Time: ${{timeStr}}\\n🤖 Model: ${{model}}\\n🌐 Port: ${{gatewayPort}}`;
 
-
-    // Use validated channel and address
-    const channel = '$CHANNEL';
-    const address = '$SAFE_ADDRESS';
-    
-    let cmd;
-    if (channel === 'imessage') {
-      cmd = \`imsg send --to '\${address}' --text "\${message}"\`;
-    } else if (channel === 'whatsapp') {
-      cmd = \`wacli send --to '\${address}' --text "\${message}"\`;
-    } else {
-      cmd = \`openclaw message send --channel \${channel} --target '\${address}' --message "\${message}"\`;
-    }
-    
-    await execAsync(cmd);
+    await execFileAsync(CLI_BIN, [...CLI_ARGS, message], {{ timeout: 10000 }});
     console.log("[gateway-restart-notify] Notification sent");
-  } catch (err) {
+  }} catch (err) {{
     console.error("[gateway-restart-notify] Failed:", err);
-  }
-};
+  }}
+}};
 
 export default handler;
-HANDLEREOF
+"""
 
-echo "✓ Created handler.ts"
+with open(out_path, "w") as f:
+    f.write(handler)
 
-openclaw hooks enable gateway-restart-notify
-echo "✓ Hook enabled"
+print("✓ Created handler.ts")
+PYEOF
 
 echo ""
 echo "Setup complete! Restart gateway to test:"
 echo "  openclaw gateway restart"
+echo ""
+echo "Note: OpenClaw executes handler.ts directly via its built-in TS runtime (no compile step needed)."

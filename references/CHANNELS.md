@@ -3,7 +3,7 @@
 ## iMessage
 
 **CLI**: `imsg`
-**Address format**: Email or phone number (e.g., `user@icloud.com`, `277498782@qq.com`)
+**Address format**: Email or phone number (e.g., `user@icloud.com`, `yourname@qq.com`)
 **Command**:
 ```bash
 imsg send --to <address> --text "<message>"
