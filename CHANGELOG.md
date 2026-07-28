@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.4] - 2026-07-28
+
+### Fixed
+- `trap cleanup EXIT` now registered before `mkdir` — prevents orphaned hook directory if `chmod` fails
+- Removed false address-format-validation claim from SECURITY.md (actual validation is done by the channel CLI at runtime)
+
+### Added
+- `--yes` flag for fully non-interactive setup (CI/automation); `--force` now only skips overwrite prompt
+- `--force` and `--yes` can be passed in any argument order
+- Privacy confirmation is now independent of `--force` — cannot be bypassed without explicit `--yes`
+- `uninstall_gateway_notify.sh` with `--force`/`--yes` support and gateway restart prompt
+- HOOK.md and handler.ts both verified with `[ ! -s ]` after write
+- SKILL.md: Supported Channels table, Script Flags table, Debugging Notifications section
+- MANUAL.md: updated handler template (UTC fallback, channel CLI table, uninstall section)
+- SECURITY.md: explicit channel whitelist values, Dependencies section, third-party metadata notice
+
+### Changed
+- Timezone fallback in handler now emits UTC string instead of hardcoded UTC+8 offset
+- Error message for unsupported channel uses `printf '%s'` (safe output)
+
 ## [2.0.0] - 2026-07-27
 
 ### Breaking Changes

@@ -2,15 +2,17 @@
 
 Auto-notify when OpenClaw gateway restarts. Supports multiple messaging channels.
 
-**Current version:** 2.0.0 — OpenClaw 2026.7+ compatible
+**Current version:** 2.1.4 — OpenClaw 2026.7+ compatible
 
 ## Features
 
 - 🚀 Automatic notification on gateway startup
-- 📊 Shows model, time, and port info
+- ⏰ Shows startup timestamp (UTC fallback for any timezone)
 - 🌐 Supports 5 channels: iMessage, WhatsApp, Telegram, Discord, Slack
-- ⚡ One-command setup
-- 🔒 Security: shell injection prevention, async I/O, safe code generation
+- ⚡ One-command setup with `--force`/`--yes` flags for automation
+- 🔒 Security: whitelist + JSON encoding + execFile, no shell interpreter
+- ♻️ Rollback on failure, HOOK.md + handler.ts both verified after write
+- 🗑️ Uninstall script with optional immediate gateway restart
 
 ## Requirements
 
