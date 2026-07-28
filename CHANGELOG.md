@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.5] - 2026-07-28
+
+### Security / Docs (ClawHub audit follow-up)
+- **MANUAL_zh.md**: replaced the default handler example that read `openclaw.json` and transmitted model/port to third-party channels. Chinese default handler now sends timestamp only, matching the English manual.
+- Moved the "read local config" pattern into an explicit **opt-in** section with a prominent data-egress warning (both EN implicit / ZH explicit).
+- **MANUAL.md / MANUAL_zh.md**: uninstall `rm -rf` is now confirmation-gated (recommend script; manual removal prints the path via `ls -la` first).
+- **README.md**: added "Privacy & Data Transmission" section documenting what is sent, where, and the requested permissions; removed the misleading "Port auto-detection from config" feature line.
+
 ## [2.1.4] - 2026-07-28
 
 ### Fixed

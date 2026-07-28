@@ -2,7 +2,7 @@
 
 Auto-notify when OpenClaw gateway restarts. Supports multiple messaging channels.
 
-**Current version:** 2.1.4 — OpenClaw 2026.7+ compatible
+**Current version:** 2.1.5 — OpenClaw 2026.7+ compatible
 
 ## Features
 
@@ -13,6 +13,16 @@ Auto-notify when OpenClaw gateway restarts. Supports multiple messaging channels
 - 🔒 Security: whitelist + JSON encoding + execFile, no shell interpreter
 - ♻️ Rollback on failure, HOOK.md + handler.ts both verified after write
 - 🗑️ Uninstall script with optional immediate gateway restart
+
+## Privacy & Data Transmission
+
+> ⚠️ **What gets sent, and where.** This skill installs a hook that runs on **every** gateway startup and sends a message to a third-party messaging service (iMessage, WhatsApp, Telegram, Discord, or Slack).
+
+- **By default, only a startup timestamp is transmitted.** No model names, API keys, gateway port, or local configuration leaves your machine.
+- Messages are delivered through the channel's own CLI and servers, which may log message metadata (send time, sender/recipient identifiers).
+- The setup script requires explicit confirmation before installing (unless you pass `--yes` for automation).
+- **Optional customization:** you may edit the handler to include local details (e.g. model, port). This is opt-in and off by default — see [MANUAL.md](references/MANUAL.md). Only do this if you accept that the added data will be sent externally.
+- Permissions requested: `shell_exec`, `file_write`, `hook_install`, `network_send`, `gateway_restart`. The hook is persistent until you uninstall it.
 
 ## Requirements
 
@@ -78,14 +88,14 @@ openclaw gateway restart
 | Discord | `openclaw message` | Channel ID |
 | Slack | `openclaw message` | Channel name or ID |
 
-## What's New in v2.0
+## What's New in v2.1.4
 
-- ✅ Compatible with OpenClaw 2026.7+
-- 🔒 Shell injection prevention via execFile
-- ⚡ Non-blocking async file I/O
-- 🛡️ Safe address escaping in generated code
-- 🐍 Python3 dependency check
-- 📊 Port auto-detection from config
+- 🔐 Complete permissions declaration (`hook_install`, `network_send`, `gateway_restart`)
+- 🛡️ Privacy confirmation cannot be bypassed by `--force` (only `--yes` skips it)
+- ♻️ Rollback on failure via `trap` registered before any file write
+- ⏰ UTC timezone fallback (no longer hardcoded UTC+8)
+- 🧹 Default handler sends **timestamp only** — no config data read or transmitted
+- 🗑️ Uninstall script + confirmation-gated manual removal steps
 
 ## License
 

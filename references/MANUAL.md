@@ -89,13 +89,19 @@ The hook is automatically loaded from `~/.openclaw/hooks/` — no explicit enabl
 
 ## Uninstall
 
-```bash
-rm -rf ~/.openclaw/hooks/gateway-restart-notify
-openclaw gateway restart
-```
+> ⚠️ The command below permanently deletes the hook directory. Review the path before running it.
 
-Or use the provided script:
+The recommended way is the uninstall script, which prompts for confirmation and offers to restart the gateway:
 
 ```bash
 scripts/uninstall_gateway_notify.sh
+```
+
+Manual removal (only the fixed hook path; confirm before running):
+
+```bash
+# Confirm the target path first, then remove
+ls -la ~/.openclaw/hooks/gateway-restart-notify
+rm -rf ~/.openclaw/hooks/gateway-restart-notify
+openclaw gateway restart
 ```

@@ -1,6 +1,6 @@
 ---
 name: gateway-notify
-version: 2.1.4
+version: 2.1.5
 description: "Set up automatic notifications when OpenClaw gateway restarts. Use when user wants to be notified of gateway startup events via any messaging channel (iMessage, WhatsApp, Telegram, Discord, etc.)."
 permissions:
   - shell_exec      # runs setup_gateway_notify.sh to create hook files
